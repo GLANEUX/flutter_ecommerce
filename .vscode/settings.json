@@ -1,0 +1,9 @@
+{
+  "java.jdt.ls.java.home": "/usr/lib/jvm/java-17-openjdk-amd64",
+  "gradle.javaHome": "/usr/lib/jvm/java-17-openjdk-amd64",
+  "terminal.integrated.env.linux": {
+    "JAVA_HOME": "/usr/lib/jvm/java-17-openjdk-amd64",
+    "PATH": "/usr/lib/jvm/java-17-openjdk-amd64/bin:${env:PATH}"
+  },
+  "java.configuration.updateBuildConfiguration": "automatic"
+}

@@ -1,6 +1,6 @@
 name: flutter_application_1
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  http: 1.5.0
+  firebase_core: 4.1.0
+  firebase_auth: 6.0.2
 
 dev_dependencies:
   flutter_test:
