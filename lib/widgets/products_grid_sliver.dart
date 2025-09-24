@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/product.dart';
+import '../models/product_model.dart';
 import 'app_product_card.dart';
 
 class ProductsGridSliver extends StatelessWidget {
@@ -34,7 +34,6 @@ class ProductsGridSliver extends StatelessWidget {
             title: p.title,
             imageUrl: p.image,
             price: p.price,
-            rating: p.rate,
             onTap: () => onProductTap?.call(p),
           );
         }, childCount: products.length),

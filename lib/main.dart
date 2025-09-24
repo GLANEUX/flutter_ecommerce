@@ -1,11 +1,13 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 // import 'pages/cart_page.dart';
-import 'pages/home_page.dart';
-import 'pages/allProducts_page.dart';
-import 'pages/account_page.dart';
-import 'pages/login_page.dart';
-import 'pages/register_page.dart';
+import 'pages/home.dart';
+import 'pages/product.dart';
+import 'pages/account.dart';
+import 'pages/login.dart';
+import 'pages/register.dart';
+import 'pages/single_product.dart';
+import 'pages/products.dart';
 
 void main() async {
   // init les bindings de flutter (for firebase)
@@ -26,12 +28,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(colorSchemeSeed: Colors.blue, useMaterial3: true),
       initialRoute: '/',
       routes: {
-        '/': (_) => const MyHomePage(),
-        '/all': (_) => const AllProductPage(),
+        '/': (_) => const ProductsPage(),
+        '/all': (_) => const ProductsPage(),
         '/login': (_) => const LoginPage(),
         '/register': (_) => const RegisterPage(),
         '/account': (_) => const AccountPage(),
         // '/cart': (_) => const CartPage(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/product') {
+          final args = settings.arguments;
+          return MaterialPageRoute(builder: (_) => ProductPage(product: args));
+        }
+        return null;
       },
     );
   }
