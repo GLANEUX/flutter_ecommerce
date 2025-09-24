@@ -5,46 +5,68 @@ import '../services/product_service.dart';
 class ProductsViewModel extends ChangeNotifier {
   final ProductService _apiService = ProductService();
 
-  // État privé
   List<Product> _products = [];
+  List<String> _categories = ['All'];
+  String _selectedCategory = 'All';
   bool _isLoading = false;
   String _errorMessage = '';
 
-  // Getters publics (lecture seule)
   List<Product> get products => _products;
+  List<String> get categories => _categories;
+  String get selectedCategory => _selectedCategory;
   bool get isLoading => _isLoading;
   String get errorMessage => _errorMessage;
   bool get hasError => _errorMessage.isNotEmpty;
 
-  // Chargement automatique à l'instanciation
   ProductsViewModel() {
-    loadProducts();
+    init();
   }
 
-  Future<void> loadProducts() async {
-    // Éviter les appels multiples simultanés
-    if (_isLoading) return;
+  Future<void> init() async {
+    await Future.wait([
+      loadCategories(),
+      loadProducts(), // par défaut All
+    ]);
+  }
 
+  Future<void> loadProducts({String? category}) async {
+    if (_isLoading) return;
     _setLoading(true);
     _clearError();
-
     try {
-      _products = await _apiService.fetchProducts();
-    } catch (error) {
+      _products = await ProductService.fetchProducts(
+        category: category ?? _selectedCategory,
+      );
+    } catch (_) {
       _setError('Impossible de charger les produits');
     }
-
     _setLoading(false);
   }
 
-  // Méthodes privées pour gérer l'état
-  void _setLoading(bool loading) {
-    _isLoading = loading;
+  Future<void> loadCategories() async {
+    try {
+      final cats = await ProductService.fetchCategories();
+      _categories = ['All', ...cats];
+      notifyListeners();
+    } catch (_) {
+      // silencieux, on garde ['All']
+    }
+  }
+
+  Future<void> selectCategory(String cat) async {
+    if (cat == _selectedCategory) return;
+    _selectedCategory = cat;
+    notifyListeners();
+    await loadProducts(category: cat);
+  }
+
+  void _setLoading(bool v) {
+    _isLoading = v;
     notifyListeners();
   }
 
-  void _setError(String error) {
-    _errorMessage = error;
+  void _setError(String e) {
+    _errorMessage = e;
     notifyListeners();
   }
 
