@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/widgets/cart_icon_badge.dart';
 
 class AppSliverAppBar extends StatelessWidget {
   const AppSliverAppBar({super.key, required this.title});
@@ -21,21 +22,23 @@ class AppSliverAppBar extends StatelessWidget {
         ),
       ),
       actions: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 12),
-          child: CircleAvatar(
-            child: IconButton(
-              icon: const Icon(Icons.account_circle),
-              onPressed: () {
-                if (user != null) {
-                  Navigator.pushReplacementNamed(context, '/account');
-                } else {
-                  Navigator.pushReplacementNamed(context, '/login');
-                }
-              },
-            ),
-          ),
+        // Badge Panier
+        const CartIconBadge(),
+
+        // Bouton Compte
+        IconButton(
+          tooltip: user != null ? 'Mon compte' : 'Se connecter',
+          icon: const Icon(Icons.account_circle),
+          onPressed: () {
+            if (user != null) {
+              Navigator.pushNamed(context, '/account');
+            } else {
+              Navigator.pushNamed(context, '/login');
+            }
+          },
         ),
+
+        const SizedBox(width: 8),
       ],
     );
   }

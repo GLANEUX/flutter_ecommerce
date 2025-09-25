@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
-import '../widgets/drawer.dart';
+import '../widgets/drawer/drawer.dart';
 import '../widgets/bannerCarousel.dart';
 import '../widgets/products_grid_sliver.dart';
 import '../widgets/app_sliver_app_bar.dart'; // <-- import

@@ -3,7 +3,7 @@
 // ================================
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../widgets/drawer.dart';
+import '../widgets/drawer/drawer.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});

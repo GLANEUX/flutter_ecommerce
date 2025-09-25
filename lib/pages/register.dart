@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 // 🔥 AJOUT : Import Firebase Auth pour l'inscription
 import 'package:firebase_auth/firebase_auth.dart';
-import '../widgets/drawer.dart';
+import '../widgets/drawer/drawer.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});

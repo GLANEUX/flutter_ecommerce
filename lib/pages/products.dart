@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../viewmodels/products_viewmodel.dart';
-import '../widgets/drawer.dart';
+import '../widgets/drawer/drawer.dart';
 import '../models/product_model.dart';
 
 class ProductsPage extends StatefulWidget {

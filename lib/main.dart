@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_application_1/viewmodels/cart_viewmodel.dart';
 import 'firebase_options.dart';
 
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import 'pages/login.dart';
 import 'pages/register.dart';
 import 'pages/single_product.dart';
 import 'pages/products.dart';
+import 'pages/cart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +28,10 @@ class AppBootstrap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => ProductsViewModel())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => ProductsViewModel()),
+        ChangeNotifierProvider(create: (_) => CartViewModel()),
+      ],
       child: const MyApp(),
     );
   }
@@ -48,6 +53,7 @@ class MyApp extends StatelessWidget {
         '/login': (_) => const LoginPage(),
         '/register': (_) => const RegisterPage(),
         '/account': (_) => const AccountPage(),
+        '/cart': (_) => const CartPage(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/product') {
