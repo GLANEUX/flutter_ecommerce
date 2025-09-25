@@ -59,14 +59,13 @@ class AppProductCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      if (product.rating?.rate != null)
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 16),
-                            const SizedBox(width: 2),
-                            Text(product.rating!.rate.toStringAsFixed(1)),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 16),
+                          const SizedBox(width: 2),
+                          Text(product.rating.rate.toStringAsFixed(1)),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),

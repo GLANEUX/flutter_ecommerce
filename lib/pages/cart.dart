@@ -39,7 +39,7 @@ class CartPage extends StatelessWidget {
                     width: 56,
                     height: 56,
                     child: Image.network(
-                      p.image ?? '',
+                      p.image,
                       fit: BoxFit.cover,
                       errorBuilder: (_, __, ___) =>
                           const Icon(Icons.image_not_supported),

@@ -58,25 +58,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _resetPassword() async {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty) {
-      setState(
-        () => _error = 'Entrez votre email pour réinitialiser le mot de passe.',
-      );
-      return;
-    }
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email de réinitialisation envoyé.')),
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() => _error = _mapError(e.code));
-    }
-  }
-
   String _mapError(String code) {
     switch (code) {
       case 'user-not-found':
