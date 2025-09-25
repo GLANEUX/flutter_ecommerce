@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import 'viewmodels/products_viewmodel.dart';
 import 'pages/home.dart';
 import 'pages/account.dart';
+import 'pages/product_page.dart';
 import 'pages/login.dart';
 import 'pages/register.dart';
-import 'pages/single_product.dart';
 import 'pages/products.dart';
 
 Future<void> main() async {
