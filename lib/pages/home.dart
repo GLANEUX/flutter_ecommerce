@@ -99,7 +99,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ProductsGridSliver(
                 products: products,
                 onProductTap: (p) {
-                  // TODO: navigation vers la page détail produit
+                  Navigator.pushNamed(context, '/product', arguments: p);
                 },
               ),
             ],

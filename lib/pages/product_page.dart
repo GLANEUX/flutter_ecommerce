@@ -1,10 +1,8 @@
-// ================================
-// lib/pages/product_detail_page.dart
-// ================================
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/models/product_model.dart';
 
 class ProductPage extends StatelessWidget {
-  final dynamic product; // ou mieux : final Product product;
+  final Product product;
 
   const ProductPage({super.key, required this.product});
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_application_1/models/product_model.dart';
 import 'firebase_options.dart';
 
 import 'package:provider/provider.dart';
 import 'viewmodels/products_viewmodel.dart';
 import 'pages/home.dart';
-import 'pages/product.dart';
 import 'pages/account.dart';
 import 'pages/login.dart';
 import 'pages/register.dart';
@@ -52,7 +52,9 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         if (settings.name == '/product') {
           final args = settings.arguments;
-          return MaterialPageRoute(builder: (_) => ProductPage(product: args));
+          return MaterialPageRoute(
+            builder: (_) => ProductPage(product: args as Product),
+          );
         }
         return null;
       },
