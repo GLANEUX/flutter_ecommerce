@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/widgets/cart_icon_badge.dart';
+import 'package:flutter_application_1/widgets/header/cart_icon_badge.dart';
 
 class AppSliverAppBar extends StatelessWidget {
   const AppSliverAppBar({super.key, required this.title});

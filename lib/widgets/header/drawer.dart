@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_1/widgets/drawer/drawer_footer.dart';
-import 'package:flutter_application_1/widgets/drawer/drawer_header.dart';
+import 'package:flutter_application_1/widgets/header/drawer_footer.dart';
+import 'package:flutter_application_1/widgets/header/drawer_header.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/cart_viewmodel.dart';
 

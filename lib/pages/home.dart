@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../services/product_service.dart';
-import '../widgets/drawer/drawer.dart';
+import '../widgets/header/drawer.dart';
 import '../widgets/bannerCarousel.dart';
 import '../widgets/products_grid_sliver.dart';
-import '../widgets/app_sliver_app_bar.dart'; // <-- import
+import '../widgets/header/sliver_app_bar.dart'; // <-- import
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
@@ -49,7 +49,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
           return CustomScrollView(
             slivers: [
-              // ✅ AppBar externalisée
               AppSliverAppBar(title: 'Fake Store'),
 
               const SliverToBoxAdapter(child: SizedBox(height: 12)),

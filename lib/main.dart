@@ -6,18 +6,16 @@ import 'firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'viewmodels/products_viewmodel.dart';
 import 'pages/home.dart';
-import 'pages/product.dart';
 import 'pages/account.dart';
 import 'pages/login.dart';
 import 'pages/register.dart';
-import 'pages/single_product.dart';
 import 'pages/products.dart';
 import 'pages/cart.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // <-- Android & Web OK
+    options: DefaultFirebaseOptions.currentPlatform, // Android & Web OK
   );
   runApp(const AppBootstrap());
 }
@@ -54,13 +52,6 @@ class MyApp extends StatelessWidget {
         '/register': (_) => const RegisterPage(),
         '/account': (_) => const AccountPage(),
         '/cart': (_) => const CartPage(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/product') {
-          final args = settings.arguments;
-          return MaterialPageRoute(builder: (_) => ProductPage(product: args));
-        }
-        return null;
       },
     );
   }
