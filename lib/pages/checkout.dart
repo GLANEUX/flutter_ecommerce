@@ -17,11 +17,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   Future<void> _pay() async {
     if (!mounted) return;
-    
+
     final cart = context.read<CartViewModel>();
     if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Panier vide')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Panier vide')));
       return;
     }
 
@@ -52,19 +53,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
 
       if (!mounted) return;
-      
+
       await context.read<OrdersViewModel>().add(order);
       cart.clear();
 
       if (!mounted) return;
-      
+
       Navigator.pushReplacementNamed(context, '/orders');
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Paiement réussi ✅')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Paiement réussi ✅')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Erreur lors du paiement')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Erreur lors du paiement')));
     } finally {
       if (mounted) {
         setState(() => _processing = false);
