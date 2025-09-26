@@ -31,7 +31,10 @@ class DrawerHeaders extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(caption!, style: TextStyle(color: onPrimary.withOpacity(.85))),
+          Text(
+            caption!,
+            style: TextStyle(color: onPrimary.withValues(alpha: .85)),
+          ),
         ],
       ),
     );

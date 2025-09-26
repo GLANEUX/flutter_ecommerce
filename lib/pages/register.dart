@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../widgets/header/sliver_app_bar.dart';
-import '../widgets/header/drawer.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -133,7 +131,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             color: scheme.errorContainer,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: scheme.error.withOpacity(.4),
+                              color: scheme.error.withValues(alpha: .4),
                             ),
                           ),
                           child: Text(
@@ -161,13 +159,15 @@ class _RegisterPageState extends State<RegisterPage> {
                               ],
                               validator: (v) {
                                 final value = (v ?? '').trim();
-                                if (value.isEmpty)
+                                if (value.isEmpty) {
                                   return 'Veuillez saisir votre email';
+                                }
                                 final emailRegex = RegExp(
                                   r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                                 );
-                                if (!emailRegex.hasMatch(value))
+                                if (!emailRegex.hasMatch(value)) {
                                   return 'Adresse email invalide';
+                                }
                                 return null;
                               },
                               textInputAction: TextInputAction.next,
@@ -203,10 +203,12 @@ class _RegisterPageState extends State<RegisterPage> {
                               obscureText: _obscurePass,
                               autofillHints: const [AutofillHints.newPassword],
                               validator: (v) {
-                                if ((v ?? '').isEmpty)
+                                if ((v ?? '').isEmpty) {
                                   return 'Veuillez saisir un mot de passe';
-                                if ((v ?? '').length < 6)
+                                }
+                                if ((v ?? '').length < 6) {
                                   return 'Au moins 6 caractères';
+                                }
                                 return null;
                               },
                               textInputAction: TextInputAction.next,
@@ -244,10 +246,12 @@ class _RegisterPageState extends State<RegisterPage> {
                               obscureText: _obscureConfirm,
                               autofillHints: const [AutofillHints.password],
                               validator: (v) {
-                                if ((v ?? '').isEmpty)
+                                if ((v ?? '').isEmpty) {
                                   return 'Veuillez confirmer le mot de passe';
-                                if (v != _passCtrl.text)
+                                }
+                                if (v != _passCtrl.text) {
                                   return 'Les mots de passe ne correspondent pas';
+                                }
                                 return null;
                               },
                               onFieldSubmitted: (_) => _register(),

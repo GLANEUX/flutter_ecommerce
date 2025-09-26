@@ -2,8 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../widgets/header/sliver_app_bar.dart';
-import '../widgets/header/drawer.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -33,30 +31,38 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _signIn() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate() || !mounted) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
     });
+
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
+
       if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, '/');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Connexion réussie !'),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pushReplacementNamed(context, '/');
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() => _error = _mapError(e.code));
     } catch (_) {
+      if (!mounted) return;
       setState(() => _error = "Une erreur inattendue s'est produite.");
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -128,7 +134,7 @@ class _LoginPageState extends State<LoginPage> {
                             color: scheme.errorContainer,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: scheme.error.withOpacity(.4),
+                              color: scheme.error.withValues(alpha: .4),
                             ),
                           ),
                           child: Text(
@@ -155,13 +161,15 @@ class _LoginPageState extends State<LoginPage> {
                               ],
                               validator: (v) {
                                 final value = (v ?? '').trim();
-                                if (value.isEmpty)
+                                if (value.isEmpty) {
                                   return 'Veuillez saisir votre email';
+                                }
                                 final emailRegex = RegExp(
                                   r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
                                 );
-                                if (!emailRegex.hasMatch(value))
+                                if (!emailRegex.hasMatch(value)) {
                                   return 'Adresse email invalide';
+                                }
                                 return null;
                               },
                               textInputAction: TextInputAction.next,
@@ -194,10 +202,12 @@ class _LoginPageState extends State<LoginPage> {
                               obscureText: _obscure,
                               autofillHints: const [AutofillHints.password],
                               validator: (v) {
-                                if ((v ?? '').isEmpty)
+                                if ((v ?? '').isEmpty) {
                                   return 'Veuillez saisir votre mot de passe';
-                                if ((v ?? '').length < 6)
+                                }
+                                if ((v ?? '').length < 6) {
                                   return 'Au moins 6 caractères';
+                                }
                                 return null;
                               },
                               onFieldSubmitted: (_) => _signIn(),
@@ -257,19 +267,24 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         height: 48,
                         child: OutlinedButton.icon(
-                          onPressed: () async {
-                            try {
-                              await signInWithGoogle();
-                              // Grâce à ton RedirectIfAuthenticated, la redirection se fera auto.
-                              // Sinon: Navigator.pushReplacementNamed(context, '/');
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Connexion Google impossible'),
-                                ),
-                              );
-                            }
-                          },
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  if (!context.mounted) return;
+                                  try {
+                                    await signInWithGoogle();
+                                    if (!context.mounted) return;
+                                  } catch (e) {
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Connexion Google impossible',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
 
                           label: const Text('Se connecter avec Google'),
                         ),

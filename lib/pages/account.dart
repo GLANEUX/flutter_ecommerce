@@ -71,6 +71,7 @@ class _HeaderCard extends StatelessWidget {
 class _AccountActions extends StatelessWidget {
   const _AccountActions();
 
+  // ignore: unused_element
   void _go(BuildContext context, String route) {
     final current = ModalRoute.of(context)?.settings.name;
     if (current == route) {
@@ -159,7 +160,7 @@ class _OrdersPreviewState extends State<_OrdersPreview> {
                 child: Text('Aucune commande pour le moment.'),
               )
             else
-              ...orders.map((o) => _OrderRow(o)).toList(),
+              ...orders.map((o) => _OrderRow(o)),
           ],
         ),
       ),
