@@ -20,4 +20,4 @@ jobs:
 
       - name: Deploy to Firebase Hosting (Preview)
         run: |
-          firebase hosting:channel:deploy pr-${{ github.run_id }} --token "$FIREBASE_TOKEN"
+          firebase hosting:channel:deploy pr-${{ github.run_id }} --token "$FIREBASE_TOKEN" --project "$FIREBASE_PROJECT_ID"
