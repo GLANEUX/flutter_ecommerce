@@ -86,10 +86,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      drawer: const AppDrawer(),
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(title: 'Inscription'),
           SliverToBoxAdapter(
             child: Center(
               child: ConstrainedBox(

@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import '../widgets/header/sliver_app_bar.dart';
 import '../widgets/header/drawer.dart';
 
@@ -80,10 +82,8 @@ class _LoginPageState extends State<LoginPage> {
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      drawer: const AppDrawer(),
       body: CustomScrollView(
         slivers: [
-          const AppSliverAppBar(title: 'Connexion'),
           SliverToBoxAdapter(
             child: Center(
               child: ConstrainedBox(
@@ -208,6 +208,21 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                       const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.pushReplacementNamed(
+                                    context,
+                                    '/register',
+                                  ),
+                            child: const Text('Pas de compte ? S\'inscrire'),
+                          ),
+                        ],
+                      ),
+
                       SizedBox(
                         height: 48,
                         child: FilledButton(
@@ -224,6 +239,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 20),
+
                       // Divider
                       Row(
                         children: const [
@@ -241,14 +257,21 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         height: 48,
                         child: OutlinedButton.icon(
-                          onPressed: _isLoading
-                              ? null
-                              : () => Navigator.pushReplacementNamed(
-                                  context,
-                                  '/register',
+                          onPressed: () async {
+                            try {
+                              await signInWithGoogle();
+                              // Grâce à ton RedirectIfAuthenticated, la redirection se fera auto.
+                              // Sinon: Navigator.pushReplacementNamed(context, '/');
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Connexion Google impossible'),
                                 ),
+                              );
+                            }
+                          },
 
-                          label: const Text('Créer un compte'),
+                          label: const Text('Se connecter avec Google'),
                         ),
                       ),
                     ],
@@ -260,5 +283,41 @@ class _LoginPageState extends State<LoginPage> {
         ],
       ),
     );
+  }
+}
+
+Future<void> signInWithGoogle() async {
+  try {
+    if (kIsWeb) {
+      // --- WEB: utiliser les popups Firebase directement ---
+      final provider = GoogleAuthProvider();
+      // Optionnel: scopes supplémentaires
+      // provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+
+      await FirebaseAuth.instance.signInWithPopup(provider);
+      // Alternative si popup bloqué:
+      // await FirebaseAuth.instance.signInWithRedirect(provider);
+      return;
+    } else {
+      // --- ANDROID / iOS ---
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return; // l’utilisateur a annulé
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      return;
+    }
+  } on FirebaseAuthException catch (e) {
+    // Utile pour diagnostiquer
+    debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+    rethrow;
+  } catch (e) {
+    debugPrint('Google sign-in error: $e');
+    rethrow;
   }
 }

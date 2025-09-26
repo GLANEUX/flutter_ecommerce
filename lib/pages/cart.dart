@@ -111,13 +111,8 @@ class CartPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Checkout non implémenté'),
-                            ),
-                          );
-                        },
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/checkout'),
                         child: const Text('Passer au paiement'),
                       ),
                     ),
