@@ -1,9 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+
 import '../viewmodels/products_viewmodel.dart';
-import '../widgets/drawer.dart';
+import '../viewmodels/cart_viewmodel.dart';
 import '../models/product_model.dart';
+
+import '../widgets/header/drawer.dart';
+import '../widgets/header/sliver_app_bar.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -13,86 +18,163 @@ class ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<ProductsPage> {
+  final _searchCtrl = TextEditingController();
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onQueryChanged(BuildContext context, String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      context.read<ProductsViewModel>().setQuery(value);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Produits'),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
-      ),
       drawer: const AppDrawer(),
       body: Consumer<ProductsViewModel>(
-        builder: (context, viewModel, child) {
-          return _buildBody(viewModel);
+        builder: (context, vm, _) {
+          return CustomScrollView(
+            slivers: [
+              const AppSliverAppBar(title: 'Produits'),
+
+              // 🔎 Recherche
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => _onQueryChanged(context, v),
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: 'Rechercher (titre, catégorie)',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: vm.query.isNotEmpty
+                          ? IconButton(
+                              tooltip: 'Effacer',
+                              icon: const Icon(Icons.close),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _onQueryChanged(context, '');
+                              },
+                            )
+                          : null,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
+                ),
+              ),
+
+              // 🔹 Catégories
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 52,
+                  child: FutureBuilder<List<String>>(
+                    future: vm.loadCategories(),
+                    builder: (context, snap) {
+                      if (snap.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+                      if (snap.hasError || !snap.hasData) {
+                        return const Center(child: Text('Erreur catégories'));
+                      }
+                      final cats = snap.data!;
+                      return ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        scrollDirection: Axis.horizontal,
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemCount: cats.length,
+                        itemBuilder: (context, i) {
+                          final c = cats[i];
+                          final selected =
+                              c.toLowerCase() == vm.category.toLowerCase();
+                          return ChoiceChip(
+                            label: Text(c[0].toUpperCase() + c.substring(1)),
+                            selected: selected,
+                            onSelected: (_) => vm.setCategory(c),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 8)),
+
+              // ===== États =====
+              if (vm.isLoading) ...[
+                const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
+              ] else if (vm.hasError) ...[
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Center(child: Text('Erreur : ${vm.errorMessage}')),
+                ),
+              ] else ...[
+                SliverPadding(
+                  padding: const EdgeInsets.all(16),
+                  sliver: _ProductsListSliver(products: vm.filteredProducts),
+                ),
+                if (vm.filteredProducts.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: Text('Aucun produit trouvé')),
+                  ),
+              ],
+            ],
+          );
         },
       ),
     );
   }
+}
 
-  Widget _buildBody(ProductsViewModel viewModel) {
-    if (viewModel.isLoading) {
-      return _buildLoadingState();
+// ---------- Sliver List des produits ----------
+class _ProductsListSliver extends StatelessWidget {
+  const _ProductsListSliver({required this.products});
+  final List<Product> products;
+
+  @override
+  Widget build(BuildContext context) {
+    if (products.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-
-    if (viewModel.hasError) {
-      return _buildErrorState(viewModel);
-    }
-
-    return _buildSuccessState(viewModel);
-  }
-
-  Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Chargement des produits...'),
-        ],
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => _ProductCard(product: products[index]),
+        childCount: products.length,
       ),
     );
   }
+}
 
-  Widget _buildErrorState(ProductsViewModel viewModel) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.red),
-            const SizedBox(height: 16),
-            Text(
-              viewModel.errorMessage,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: viewModel.loadProducts,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Réessayer'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+/// Carte produit
+class _ProductCard extends StatelessWidget {
+  const _ProductCard({required this.product});
+  final Product product;
 
-  Widget _buildSuccessState(ProductsViewModel viewModel) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: viewModel.products.length,
-      itemBuilder: (context, index) {
-        final product = viewModel.products[index];
-        return _buildProductCard(product);
-      },
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    final cart = context.read<CartViewModel>();
 
-  Widget _buildProductCard(Product product) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
@@ -101,16 +183,111 @@ class _ProductsPageState extends State<ProductsPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildProductImage(product.image),
+            _ProductImage(imageUrl: product.image),
             const SizedBox(width: 16),
-            Expanded(child: _buildProductInfo(product)),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      product.category.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Row(
+                    children: [
+                      Text(
+                        product.formattedPrice,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          product.starsDisplay,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      FilledButton.tonal(
+                        onPressed: () {
+                          cart.add(product, qty: 1);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Ajouté au panier')),
+                          );
+                        },
+                        child: const Text('Ajouter au panier'),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'La page produit n’est pas configurée.',
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text('Voir le détail'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildProductImage(String imageUrl) {
+class _ProductImage extends StatelessWidget {
+  const _ProductImage({required this.imageUrl});
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: CachedNetworkImage(
@@ -140,50 +317,6 @@ class _ProductsPageState extends State<ProductsPage> {
           child: const Icon(Icons.image_not_supported, color: Colors.grey),
         ),
       ),
-    );
-  }
-
-  Widget _buildProductInfo(Product product) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          product.title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            product.category.toUpperCase(),
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.blue[700],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          product.formattedPrice,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.green,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          product.starsDisplay,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
-      ],
     );
   }
 }

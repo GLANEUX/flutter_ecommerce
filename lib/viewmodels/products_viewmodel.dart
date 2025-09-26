@@ -3,75 +3,73 @@ import '../models/product_model.dart';
 import '../services/product_service.dart';
 
 class ProductsViewModel extends ChangeNotifier {
-  final ProductService _apiService = ProductService();
-
   List<Product> _products = [];
-  List<String> _categories = ['All'];
-  String _selectedCategory = 'All';
   bool _isLoading = false;
-  String _errorMessage = '';
+  String _error = '';
 
+  String _query = '';
+  String _category = 'All';
+
+  // Getters
   List<Product> get products => _products;
-  List<String> get categories => _categories;
-  String get selectedCategory => _selectedCategory;
   bool get isLoading => _isLoading;
-  String get errorMessage => _errorMessage;
-  bool get hasError => _errorMessage.isNotEmpty;
+  String get errorMessage => _error;
+  bool get hasError => _error.isNotEmpty;
+  String get query => _query;
+  String get category => _category;
 
-  ProductsViewModel() {
-    init();
+  // Liste filtrée (query + catégorie)
+  List<Product> get filteredProducts {
+    final q = _query.trim().toLowerCase();
+    return _products.where((p) {
+      final t = p.title.toLowerCase();
+      final c = p.category.toLowerCase();
+      final matchesQuery = q.isEmpty || t.contains(q) || c.contains(q);
+      final matchesCat =
+          _category.toLowerCase() == 'all' || c == _category.toLowerCase();
+      return matchesQuery && matchesCat;
+    }).toList();
   }
 
-  Future<void> init() async {
-    await Future.wait([
-      loadCategories(),
-      loadProducts(), // par défaut All
-    ]);
+  ProductsViewModel() {
+    loadProducts();
   }
 
   Future<void> loadProducts({String? category}) async {
     if (_isLoading) return;
-    _setLoading(true);
-    _clearError();
+    _isLoading = true;
+    _error = '';
+    notifyListeners();
+
     try {
-      _products = await ProductService.fetchProducts(
-        category: category ?? _selectedCategory,
-      );
-    } catch (_) {
-      _setError('Impossible de charger les produits');
+      if (category != null) _category = category;
+      _products = await ProductService.fetchProducts(category: _category);
+    } catch (e) {
+      _error = 'Impossible de charger les produits';
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
-    _setLoading(false);
   }
 
-  Future<void> loadCategories() async {
+  void setQuery(String? value) {
+    _query = value?.trim() ?? '';
+    notifyListeners();
+  }
+
+  void setCategory(String value) {
+    if (_category == value) return;
+    _category = value;
+    notifyListeners();
+    loadProducts(category: value);
+  }
+
+  Future<List<String>> loadCategories() async {
     try {
       final cats = await ProductService.fetchCategories();
-      _categories = ['All', ...cats];
-      notifyListeners();
+      return ['All', ...cats];
     } catch (_) {
-      // silencieux, on garde ['All']
+      return ['All'];
     }
-  }
-
-  Future<void> selectCategory(String cat) async {
-    if (cat == _selectedCategory) return;
-    _selectedCategory = cat;
-    notifyListeners();
-    await loadProducts(category: cat);
-  }
-
-  void _setLoading(bool v) {
-    _isLoading = v;
-    notifyListeners();
-  }
-
-  void _setError(String e) {
-    _errorMessage = e;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _errorMessage = '';
-    notifyListeners();
   }
 }

@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../widgets/drawer.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import '../widgets/header/sliver_app_bar.dart';
+import '../widgets/header/drawer.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -10,82 +13,57 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // 🔥 AJOUT : Controllers pour gérer les champs de texte
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _emailFocus = FocusNode();
+  final _passFocus = FocusNode();
 
-  // 🔥 AJOUT : Variables pour gérer l'état de la page
-  bool _isLoading = false; // Indique si une connexion est en cours
-  String _errorMessage = ''; // Stocke les messages d'erreur
+  bool _isLoading = false;
+  bool _obscure = true;
+  String? _error;
 
   @override
   void dispose() {
-    // 🔥 AJOUT : Nettoie les controllers pour éviter les fuites mémoire
-    _emailController.dispose();
-    _passwordController.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _emailFocus.dispose();
+    _passFocus.dispose();
     super.dispose();
   }
 
-  // 🔥 AJOUT : Fonction principale de connexion
   Future<void> _signIn() async {
-    // Validation basique des champs
-    if (_emailController.text.trim().isEmpty ||
-        _passwordController.text.isEmpty) {
-      setState(() {
-        _errorMessage = 'Veuillez remplir tous les champs';
-      });
-      return;
-    }
-
-    // Active l'état de chargement
+    if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
-      _errorMessage = '';
+      _error = null;
     });
-
     try {
-      // 🔥 CŒUR : Tentative de connexion avec Firebase
       await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
       );
-
-      // Si la connexion réussit et que le widget est toujours monté
-      if (mounted) {
-        // Affiche un message de succès
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Connexion réussie !'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Redirige vers l'accueil
-        Navigator.pushReplacementNamed(context, '/');
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connexion réussie !'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/');
     } on FirebaseAuthException catch (e) {
-      // 🔥 AJOUT : Gestion des erreurs spécifiques Firebase
-      setState(() {
-        _errorMessage = _getErrorMessage(e.code);
-      });
-    } catch (e) {
-      // Gestion des autres erreurs
-      setState(() {
-        _errorMessage = 'Une erreur inattendue s\'est produite';
-      });
+      setState(() => _error = _mapError(e.code));
+    } catch (_) {
+      setState(() => _error = "Une erreur inattendue s'est produite.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    // Désactive l'état de chargement
-    setState(() {
-      _isLoading = false;
-    });
   }
 
-  // 🔥 AJOUT : Fonction qui traduit les codes d'erreur Firebase en français
-  // Liste des erreurs ici : https://firebase.google.com/docs/auth/admin/errors?hl=fr
-  String _getErrorMessage(String errorCode) {
-    switch (errorCode) {
+  String _mapError(String code) {
+    switch (code) {
       case 'user-not-found':
-        return 'Aucun utilisateur trouvé avec cette adresse email.';
+        return 'Aucun utilisateur trouvé avec cet email.';
       case 'wrong-password':
         return 'Mot de passe incorrect.';
       case 'invalid-email':
@@ -101,101 +79,245 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Connexion'),
-        backgroundColor: Colors.blue[600],
-        foregroundColor: Colors.white,
-      ),
-      // 🔥 AJOUT : Le drawer est accessible même depuis la page de connexion
-      drawer: const AppDrawer(),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icône de connexion
-            Icon(Icons.account_circle, size: 100, color: Colors.blue[600]),
-            const SizedBox(height: 30),
-
-            // 🔥 AJOUT : Champ email avec validation
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.email),
-              ),
-              keyboardType: TextInputType.emailAddress,
-              enabled: !_isLoading, // Désactivé pendant le chargement
-            ),
-            const SizedBox(height: 16),
-
-            // 🔥 AJOUT : Champ mot de passe
-            TextField(
-              controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Mot de passe',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.lock),
-              ),
-              obscureText: true, // Cache le texte
-              enabled: !_isLoading,
-              onSubmitted: (_) => _signIn(), // Connexion avec Entrée
-            ),
-            const SizedBox(height: 24),
-
-            // 🔥 AJOUT : Affichage conditionnel des messages d'erreur
-            if (_errorMessage.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red[100],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[300]!),
-                ),
-                child: Text(
-                  _errorMessage,
-                  style: TextStyle(color: Colors.red[700]),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-            if (_errorMessage.isNotEmpty) const SizedBox(height: 16),
-
-            // 🔥 AJOUT : Bouton de connexion avec état de chargement
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : _signIn, // Désactivé pendant chargement
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[600],
-                  foregroundColor: Colors.white,
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Se connecter',
-                        style: TextStyle(fontSize: 16),
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag,
+                            size: 42,
+                            color: scheme.primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Fake Store',
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Connexion',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (_error != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: scheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: scheme.error.withOpacity(.4),
+                            ),
+                          ),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(color: scheme.onErrorContainer),
+                          ),
+                        ),
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            TextFormField(
+                              controller: _emailCtrl,
+                              focusNode: _emailFocus,
+                              decoration: const InputDecoration(
+                                labelText: 'Email',
+                                prefixIcon: Icon(Icons.email_outlined),
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.emailAddress,
+                              autofillHints: const [
+                                AutofillHints.username,
+                                AutofillHints.email,
+                              ],
+                              validator: (v) {
+                                final value = (v ?? '').trim();
+                                if (value.isEmpty)
+                                  return 'Veuillez saisir votre email';
+                                final emailRegex = RegExp(
+                                  r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                                );
+                                if (!emailRegex.hasMatch(value))
+                                  return 'Adresse email invalide';
+                                return null;
+                              },
+                              textInputAction: TextInputAction.next,
+                              onFieldSubmitted: (_) =>
+                                  _passFocus.requestFocus(),
+                              enabled: !_isLoading,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _passCtrl,
+                              focusNode: _passFocus,
+                              decoration: InputDecoration(
+                                labelText: 'Mot de passe',
+                                prefixIcon: const Icon(Icons.lock_outline),
+                                border: const OutlineInputBorder(),
+                                suffixIcon: IconButton(
+                                  tooltip: _obscure ? 'Afficher' : 'Masquer',
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility
+                                        : Icons.visibility_off,
+                                  ),
+                                  onPressed: _isLoading
+                                      ? null
+                                      : () => setState(
+                                          () => _obscure = !_obscure,
+                                        ),
+                                ),
+                              ),
+                              obscureText: _obscure,
+                              autofillHints: const [AutofillHints.password],
+                              validator: (v) {
+                                if ((v ?? '').isEmpty)
+                                  return 'Veuillez saisir votre mot de passe';
+                                if ((v ?? '').length < 6)
+                                  return 'Au moins 6 caractères';
+                                return null;
+                              },
+                              onFieldSubmitted: (_) => _signIn(),
+                              enabled: !_isLoading,
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: _isLoading
+                                ? null
+                                : () => Navigator.pushReplacementNamed(
+                                    context,
+                                    '/register',
+                                  ),
+                            child: const Text('Pas de compte ? S\'inscrire'),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(
+                        height: 48,
+                        child: FilledButton(
+                          onPressed: _isLoading ? null : _signIn,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 22,
+                                  width: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text('Se connecter'),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Divider
+                      Row(
+                        children: const [
+                          Expanded(child: Divider()),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('ou'),
+                          ),
+                          Expanded(child: Divider()),
+                        ],
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            try {
+                              await signInWithGoogle();
+                              // Grâce à ton RedirectIfAuthenticated, la redirection se fera auto.
+                              // Sinon: Navigator.pushReplacementNamed(context, '/');
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Connexion Google impossible'),
+                                ),
+                              );
+                            }
+                          },
+
+                          label: const Text('Se connecter avec Google'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 16),
-
-            // 🔥 AJOUT : Lien vers la page d'inscription
-            TextButton(
-              onPressed: _isLoading
-                  ? null
-                  : () => Navigator.pushReplacementNamed(context, '/register'),
-              child: const Text('Pas de compte ? S\'inscrire'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
+  }
+}
+
+Future<void> signInWithGoogle() async {
+  try {
+    if (kIsWeb) {
+      // --- WEB: utiliser les popups Firebase directement ---
+      final provider = GoogleAuthProvider();
+      // Optionnel: scopes supplémentaires
+      // provider.addScope('https://www.googleapis.com/auth/userinfo.email');
+
+      await FirebaseAuth.instance.signInWithPopup(provider);
+      // Alternative si popup bloqué:
+      // await FirebaseAuth.instance.signInWithRedirect(provider);
+      return;
+    } else {
+      // --- ANDROID / iOS ---
+      final googleUser = await GoogleSignIn().signIn();
+      if (googleUser == null) return; // l’utilisateur a annulé
+
+      final googleAuth = await googleUser.authentication;
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      await FirebaseAuth.instance.signInWithCredential(credential);
+      return;
+    }
+  } on FirebaseAuthException catch (e) {
+    // Utile pour diagnostiquer
+    debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+    rethrow;
+  } catch (e) {
+    debugPrint('Google sign-in error: $e');
+    rethrow;
   }
 }

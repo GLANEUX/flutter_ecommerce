@@ -1,19 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/cart_viewmodel.dart';
+import '../models/product_model.dart';
 
 class AppProductCard extends StatelessWidget {
-  const AppProductCard({
-    super.key,
-    required this.title,
-    required this.imageUrl,
-    required this.price,
-    this.rating,
-    this.onTap,
-  });
+  const AppProductCard({super.key, required this.product, this.onTap});
 
-  final String title;
-  final String imageUrl;
-  final num price;
-  final num? rating;
+  final Product product;
   final VoidCallback? onTap;
 
   @override
@@ -29,22 +22,28 @@ class AppProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // AspectRatio(
-            //   aspectRatio: 1,
-            //   child: ClipRRect(
-            //     borderRadius: const BorderRadius.vertical(
-            //       top: Radius.circular(16),
-            //     ),
-            //     child: Image.network(imageUrl, fit: BoxFit.cover),
-            //   ),
-            // ),
+            // Image produit (décommente si tu as product.image/thumbnail)
+            AspectRatio(
+              aspectRatio: 1,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Image.network(
+                  product.image,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) =>
+                      const Icon(Icons.image_not_supported),
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    product.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontWeight: FontWeight.w600),
@@ -53,30 +52,36 @@ class AppProductCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '€${price.toStringAsFixed(2)}',
+                        '€${product.price.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const Spacer(),
-                      if (rating != null)
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 16),
-                            const SizedBox(width: 2),
-                            Text(rating!.toStringAsFixed(1)),
-                          ],
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.star, size: 16),
+                          const SizedBox(width: 2),
+                          Text(product.rating.rate.toStringAsFixed(1)),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
+
+                  // ✅ Un seul vrai bouton, pas de bouton imbriqué
                   FilledButton.tonal(
-                    onPressed: onTap,
+                    onPressed: () {
+                      context.read<CartViewModel>().add(product, qty: 1);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Ajouté au panier')),
+                      );
+                    },
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    child: const Text('Add to cart'),
+                    child: const Text('Ajouter au panier'),
                   ),
                 ],
               ),

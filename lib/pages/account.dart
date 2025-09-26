@@ -3,7 +3,11 @@
 // ================================
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../widgets/drawer.dart';
+import 'package:provider/provider.dart';
+
+import '../widgets/header/drawer.dart';
+import '../viewmodels/orders_viewmodel.dart';
+import '../models/order_model.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -15,12 +19,12 @@ class AccountPage extends StatelessWidget {
       drawer: const AppDrawer(),
       body: ListView(
         padding: const EdgeInsets.all(16),
-        children: [
+        children: const [
           _HeaderCard(),
-          const SizedBox(height: 16),
-          const _AccountActions(),
-          const SizedBox(height: 16),
-          const _OrdersPreview(),
+          SizedBox(height: 16),
+          _AccountActions(),
+          SizedBox(height: 16),
+          _OrdersPreview(),
         ],
       ),
     );
@@ -28,39 +32,32 @@ class AccountPage extends StatelessWidget {
 }
 
 class _HeaderCard extends StatelessWidget {
+  const _HeaderCard();
+
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final title = (user?.displayName?.trim().isNotEmpty ?? false)
+        ? 'Bonjour ${user!.displayName} 👋'
+        : 'Bonjour 👋';
+    final subtitle = user?.email ?? 'Utilisateur';
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            const CircleAvatar(radius: 28, child: Icon(Icons.person)),
-            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Bonjour 👋',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Text(
-                    'Utilisateur',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             ),
             IconButton(
-              onPressed: () {
-                // TODO: navigate to edit profile
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Édition du profil bientôt disponible'),
-                  ),
-                );
-              },
+              onPressed: () => Navigator.pushNamed(context, '/profile/edit'),
               icon: const Icon(Icons.edit),
               tooltip: 'Modifier le profil',
             ),
@@ -72,48 +69,31 @@ class _HeaderCard extends StatelessWidget {
 }
 
 class _AccountActions extends StatelessWidget {
+  const _AccountActions();
+
+  void _go(BuildContext context, String route) {
+    final current = ModalRoute.of(context)?.settings.name;
+    if (current == route) {
+      Navigator.pop(context); // si vient du drawer
+      return;
+    }
+    Navigator.pushNamed(context, route);
+  }
+
   Future<void> _signOut(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacementNamed(context, '/register');
+    if (!context.mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Déconnecté avec succès')));
+    Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);
   }
 
-  const _AccountActions();
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.shopping_bag_outlined),
-            title: const Text('Mes commandes'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              // TODO: navigate to orders page
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Historique des commandes bientôt dispo'),
-                ),
-              );
-            },
-          ),
-          const Divider(height: 0),
-          ListTile(
-            leading: const Icon(Icons.location_on_outlined),
-            title: const Text('Adresses'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          const Divider(height: 0),
-          ListTile(
-            leading: const Icon(Icons.payment_outlined),
-            title: const Text('Paiements'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          const Divider(height: 0),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Se déconnecter'),
@@ -125,33 +105,91 @@ class _AccountActions extends StatelessWidget {
   }
 }
 
-class _OrdersPreview extends StatelessWidget {
+class _OrdersPreview extends StatefulWidget {
   const _OrdersPreview();
+
+  @override
+  State<_OrdersPreview> createState() => _OrdersPreviewState();
+}
+
+class _OrdersPreviewState extends State<_OrdersPreview> {
+  @override
+  void initState() {
+    super.initState();
+    // Charge l'historique dès l’arrivée sur la page
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<OrdersViewModel>().load();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final vm = context.watch<OrdersViewModel>();
+    final orders = vm.orders.take(3).toList(); // aperçu 3 dernières
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Dernières commandes',
-              style: Theme.of(context).textTheme.titleMedium,
+            Row(
+              children: [
+                Text(
+                  'Dernières commandes',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: () => Navigator.pushNamed(context, '/orders'),
+                  icon: const Icon(Icons.receipt_long),
+                  label: const Text('Voir tout'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            const Text('Aucune commande pour le moment.'),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () {
-                // Optionally navigate to orders list
-              },
-              icon: const Icon(Icons.receipt_long),
-              label: const Text('Voir tout'),
-            ),
+            if (vm.isLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (orders.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
+                child: Text('Aucune commande pour le moment.'),
+              )
+            else
+              ...orders.map((o) => _OrderRow(o)).toList(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _OrderRow extends StatelessWidget {
+  const _OrderRow(this.order);
+  final Order order;
+
+  @override
+  Widget build(BuildContext context) {
+    final date =
+        '${order.createdAt.day.toString().padLeft(2, '0')}/${order.createdAt.month.toString().padLeft(2, '0')}/${order.createdAt.year}';
+    final total = '${order.total.toStringAsFixed(2)} €';
+
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: const Icon(Icons.receipt_long),
+      title: Text(
+        'Commande #${order.id}',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      subtitle: Text('$date — ${order.items.length} article(s)'),
+      trailing: Text(
+        total,
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      onTap: () => Navigator.pushNamed(context, '/orders'),
     );
   }
 }
