@@ -398,7 +398,7 @@ class _ErrorBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.errorContainer,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: cs.error.withOpacity(.3)),
+        border: Border.all(color: cs.error.withValues(alpha: .3)),
       ),
       child: Text(text, style: TextStyle(color: cs.onErrorContainer)),
     );

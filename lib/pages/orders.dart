@@ -61,7 +61,7 @@ class _OrdersPageState extends State<OrdersPage> {
                           '${it.price.toStringAsFixed(2)} € x ${it.quantity}',
                         ),
                         trailing: Text(
-                          (it.price * it.quantity).toStringAsFixed(2) + ' €',
+                          '${(it.price * it.quantity).toStringAsFixed(2)} €',
                         ),
                       ),
                     const Divider(height: 1),

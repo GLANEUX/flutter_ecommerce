@@ -79,8 +79,9 @@ class CartPage extends StatelessWidget {
                   ),
                 );
 
-                if (i == items.length - 1)
+                if (i == items.length - 1) {
                   return tile; // pas de divider après le dernier
+                }
                 return Column(children: [tile, const Divider(height: 1)]);
               }, childCount: items.length),
             ),

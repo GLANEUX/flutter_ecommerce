@@ -5,7 +5,7 @@ import '../models/product_model.dart';
 import '../services/product_service.dart';
 
 import '../widgets/header/drawer.dart';
-import '../widgets/bannerCarousel.dart';
+import '../widgets/banner_carousel.dart';
 import '../widgets/header/sliver_app_bar.dart';
 
 class MyHomePage extends StatefulWidget {
@@ -183,10 +183,8 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Product> _topRated(List<Product> all, int n) {
     final copy = List<Product>.from(all);
     copy.sort((a, b) {
-      final ar = (a.rating?.rate ?? 0).compareTo(b.rating?.rate ?? 0);
-      return ar != 0
-          ? ar
-          : (a.rating?.count ?? 0).compareTo(b.rating?.count ?? 0);
+      final ar = (a.rating.rate).compareTo(b.rating.rate);
+      return ar != 0 ? ar : (a.rating.count).compareTo(b.rating.count);
     });
     return copy.reversed.take(n).toList();
   }
@@ -321,7 +319,7 @@ class _SmallProductCard extends StatelessWidget {
                       const Spacer(),
                       const Icon(Icons.star, size: 14),
                       const SizedBox(width: 2),
-                      Text((product.rating?.rate ?? 0).toStringAsFixed(1)),
+                      Text((product.rating.rate).toStringAsFixed(1)),
                     ],
                   ),
                 ],

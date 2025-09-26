@@ -16,50 +16,60 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool _processing = false;
 
   Future<void> _pay() async {
+    if (!mounted) return;
+    
     final cart = context.read<CartViewModel>();
     if (cart.items.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Panier vide')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Panier vide')));
       return;
     }
 
     setState(() => _processing = true);
 
-    // 🧪 Mock paiement (2 secondes)
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await Future.delayed(const Duration(seconds: 2));
 
-    // Crée l'objet Order
-    final items = cart.items.values
-        .map(
-          (ci) => OrderItem(
-            productId: ci.product.id,
-            title: ci.product.title,
-            image: ci.product.image,
-            price: ci.product.price.toDouble(),
-            quantity: ci.quantity,
-          ),
-        )
-        .toList();
+      final items = cart.items.values
+          .map(
+            (ci) => OrderItem(
+              productId: ci.product.id,
+              title: ci.product.title,
+              image: ci.product.image,
+              price: ci.product.price.toDouble(),
+              quantity: ci.quantity,
+            ),
+          )
+          .toList();
 
-    final order = Order(
-      id: '${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}',
-      items: items,
-      subtotal: cart.subtotal.toDouble(),
-      shipping: cart.shipping.toDouble(),
-      total: cart.total.toDouble(),
-      createdAt: DateTime.now(),
-    );
+      final order = Order(
+        id: '${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(9999)}',
+        items: items,
+        subtotal: cart.subtotal.toDouble(),
+        shipping: cart.shipping.toDouble(),
+        total: cart.total.toDouble(),
+        createdAt: DateTime.now(),
+      );
 
-    // Sauvegarde locale + clear panier
-    await context.read<OrdersViewModel>().add(order);
-    cart.clear();
+      if (!mounted) return;
+      
+      await context.read<OrdersViewModel>().add(order);
+      cart.clear();
 
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Paiement réussi ✅')));
-    Navigator.pushReplacementNamed(context, '/orders');
+      if (!mounted) return;
+      
+      Navigator.pushReplacementNamed(context, '/orders');
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Paiement réussi ✅')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Erreur lors du paiement')));
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
+    }
   }
 
   @override
@@ -96,7 +106,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           '${p.price.toStringAsFixed(2)} € x ${item.quantity}',
                         ),
                         trailing: Text(
-                          (p.price * item.quantity).toStringAsFixed(2) + ' €',
+                          '${(p.price * item.quantity).toStringAsFixed(2)} €',
                         ),
                       );
                     },
